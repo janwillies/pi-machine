@@ -1,0 +1,34 @@
+name: Update bootc-os digest
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install crane
+        uses: imjasonh/setup-crane@v0.4
+
+      - name: Get latest digest
+        id: digest
+        run: |
+          DIGEST=$(crane digest quay.io/hummingbird-community/bootc-os:latest)
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Update Containerfile.hummingbird-base
+        run: |
+          sed -i "s|quay.io/hummingbird-community/bootc-os:latest@sha256:[a-f0-9]*|quay.io/hummingbird-community/bootc-os:latest@${{ steps.digest.outputs.digest }}|" Containerfile.hummingbird-base
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Containerfile.hummingbird-base
+          git diff --staged --quiet || (git commit -m "chore: update bootc-os digest to ${{ steps.digest.outputs.digest }}" && git push)

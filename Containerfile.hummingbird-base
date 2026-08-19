@@ -1,0 +1,26 @@
+## Build this Containerfile:
+# container build --tag ghcr.io/janwillies/hummingbird-base:latest --file Containerfile.hummingbird-base .
+
+FROM quay.io/hummingbird-community/bootc-os:latest@sha256:056254b0ed615e9ab28318466dd3bc2d92ae1a6c3d7bdc2a3fcae7bd7873e480
+
+# Install base dependencies and ensure /usr/local/bin exists
+RUN dnf install -y tar xz git curl ncurses-term && dnf clean all && \
+    mkdir -p /usr/local/bin
+
+RUN ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    echo "Europe/Berlin" > /etc/timezone
+
+# https://github.com/apple/container/blob/main/docs/container-machine.md#bring-your-own-container-machine-image
+RUN systemctl set-default multi-user.target
+RUN systemctl mask \
+      dev-hugepages.mount \
+      sys-fs-fuse-connections.mount \
+      systemd-update-utmp.service \
+      systemd-tmpfiles-setup.service \
+      console-getty.service
+
+# Add jan.willies to sudoers without password
+RUN echo "jan.willies ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jan_willies && \
+    chmod 0440 /etc/sudoers.d/jan_willies
+
+COPY jan_willies_aliases.sh /etc/profile.d/jan_willies_aliases.sh
