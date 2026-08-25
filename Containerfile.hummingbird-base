@@ -1,7 +1,7 @@
 ## Build this Containerfile:
 # container build --tag ghcr.io/janwillies/hummingbird-base:latest --file Containerfile.hummingbird-base .
 
-FROM quay.io/hummingbird-community/bootc-os:latest@sha256:d2c8ed2a8dda149b774cab1e4d0ffa6fd8158d9dc3d8b09523f9b82d7de4290e
+FROM quay.io/hummingbird-community/bootc-os:latest@sha256:06c8b404d23562709cacd9ec3988f22e6af34306ec598c57ace7df86ef84dc6f
 
 # Install base dependencies and ensure /usr/local/bin exists
 RUN dnf install -y tar xz git curl ncurses-term && dnf clean all && \
