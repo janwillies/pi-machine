@@ -1,4 +1,4 @@
-FROM ghcr.io/janwillies/hummingbird-base:latest
+FROM ghcr.io/janwillies/fedora-base:latest
 
 # Install pi dependencies
 RUN dnf install -y nodejs && dnf clean all

@@ -1,4 +1,4 @@
-name: Update bootc-os digest
+name: Update fedora digest
 
 on:
   schedule:
@@ -21,23 +21,23 @@ jobs:
       - name: Get latest digest
         id: digest
         run: |
-          DIGEST=$(crane digest quay.io/hummingbird-community/bootc-os:latest)
+          DIGEST=$(crane digest quay.io/fedora/fedora:44)
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
-      - name: Update Containerfile.hummingbird-base
+      - name: Update Containerfile.fedora-base
         run: |
-          sed -i "s|quay.io/hummingbird-community/bootc-os:latest@sha256:[a-f0-9]*|quay.io/hummingbird-community/bootc-os:latest@${{ steps.digest.outputs.digest }}|" Containerfile.hummingbird-base
+          sed -i "s|quay.io/fedora/fedora:44@sha256:[a-f0-9]*|quay.io/fedora/fedora:44@${{ steps.digest.outputs.digest }}|" Containerfile.fedora-base
 
       - name: Commit and push if changed
         id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Containerfile.hummingbird-base
+          git add Containerfile.fedora-base
           if git diff --staged --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "chore: update bootc-os digest to ${{ steps.digest.outputs.digest }}"
+            git commit -m "chore: update fedora digest to ${{ steps.digest.outputs.digest }}"
             git push
             echo "changed=true" >> $GITHUB_OUTPUT
           fi

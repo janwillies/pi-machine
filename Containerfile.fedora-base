@@ -1,0 +1,46 @@
+## Build this Containerfile:
+# container build --tag ghcr.io/janwillies/fedora-base:latest --file Containerfile.fedora-base .
+
+FROM quay.io/fedora/fedora:44@sha256:0bcdd2cd594293048de4c63819b6335fa799cd89a5d88b887f408aed3ee7de34
+
+# only install en_US translations; must precede the dnf install to take effect
+RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
+
+# systemd provides /sbin/init, which is all a container machine needs; NetworkManager
+# does DHCP on the virtio NIC; sudo/passwd are used by Apple's first-boot provisioning;
+# chrony resyncs the clock, which otherwise drifts across host sleep and breaks TLS/git.
+# git-core is git without the perl-dependent subcommands (svn, send-email, instaweb)
+RUN dnf install -y \
+        --setopt=install_weak_deps=False \
+        --setopt=tsflags=nodocs \
+        systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
+        tar xz git-core curl ncurses-term && \
+    dnf clean all && \
+    rm -rf /usr/share/locale/* && \
+    mkdir -p /usr/local/bin
+
+# systemd treats an empty machine-id as first boot and provisions on start
+RUN : > /etc/machine-id
+
+RUN ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    echo "Europe/Berlin" > /etc/timezone
+
+# the journal is uncapped by default and grows over the machine's lifetime
+RUN mkdir -p /etc/systemd/journald.conf.d && \
+    printf '[Journal]\nSystemMaxUse=32M\n' > /etc/systemd/journald.conf.d/00-size.conf
+
+# https://github.com/apple/container/blob/main/docs/container-machine.md#bring-your-own-container-machine-image
+# systemctl set-default does not persist here; the base ships
+# /usr/lib/systemd/system/default.target -> graphical.target, so override it in /etc
+RUN ln -sf /usr/lib/systemd/system/multi-user.target /etc/systemd/system/default.target
+# systemd detects container-other, so its getty generator wants console-getty on
+# /dev/console -- but hvc0 is write-only (-W- in /proc/consoles), so no login can work.
+# Apple's sample also masks systemd-tmpfiles-setup, but Fedora provisions /var from
+# tmpfiles.d (e.g. /var/lib/chrony), so masking it breaks packages at boot.
+RUN systemctl mask \
+      dev-hugepages.mount \
+      sys-fs-fuse-connections.mount \
+      systemd-update-utmp.service \
+      console-getty.service
+
+COPY jan_willies_aliases.sh /etc/profile.d/jan_willies_aliases.sh

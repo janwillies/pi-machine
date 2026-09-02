@@ -5,9 +5,9 @@ on:
     branches: [main]
     paths:
       - Containerfile
-      - Containerfile.hummingbird-base
+      - Containerfile.fedora-base
   workflow_dispatch:
-  workflow_call:
+  workflow_call: {}
 
 jobs:
   build:
@@ -29,9 +29,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Containerfile.hummingbird-base
+          file: Containerfile.fedora-base
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/hummingbird-base:latest
+          tags: ghcr.io/${{ github.repository_owner }}/fedora-base:latest
           platforms: linux/arm64
 
       - name: Build and push pi
