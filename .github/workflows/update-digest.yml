@@ -13,7 +13,7 @@ jobs:
     outputs:
       changed: ${{ steps.commit.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install crane
         uses: imjasonh/setup-crane@v0.4
