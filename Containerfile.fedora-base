@@ -9,12 +9,11 @@ RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
 # systemd provides /sbin/init, which is all a container machine needs; NetworkManager
 # does DHCP on the virtio NIC; sudo/passwd are used by Apple's first-boot provisioning;
 # chrony resyncs the clock, which otherwise drifts across host sleep and breaks TLS/git.
-# git-core is git without the perl-dependent subcommands (svn, send-email, instaweb)
 RUN dnf install -y \
         --setopt=install_weak_deps=False \
         --setopt=tsflags=nodocs \
         systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
-        tar xz git-core curl ncurses-term && \
+        tar xz git-core curl wget ncurses-term which && \
     dnf clean all && \
     rm -rf /usr/share/locale/* && \
     mkdir -p /usr/local/bin
@@ -33,8 +32,7 @@ RUN mkdir -p /etc/systemd/journald.conf.d && \
 # systemctl set-default does not persist here; the base ships
 # /usr/lib/systemd/system/default.target -> graphical.target, so override it in /etc
 RUN ln -sf /usr/lib/systemd/system/multi-user.target /etc/systemd/system/default.target
-# systemd detects container-other, so its getty generator wants console-getty on
-# /dev/console -- but hvc0 is write-only (-W- in /proc/consoles), so no login can work.
+
 # Apple's sample also masks systemd-tmpfiles-setup, but Fedora provisions /var from
 # tmpfiles.d (e.g. /var/lib/chrony), so masking it breaks packages at boot.
 RUN systemctl mask \
@@ -43,4 +41,8 @@ RUN systemctl mask \
       systemd-update-utmp.service \
       console-getty.service
 
-COPY jan_willies_aliases.sh /etc/profile.d/jan_willies_aliases.sh
+# StrictModes no because virtiofs mounts present ownership that sshd would otherwise reject.
+# authorized_keys lives under /home/%u, which is provided at runtime via the
+# host's home/ mount (see run-*.sh / *-vm zsh functions), not baked into the image.
+RUN printf 'AuthorizedKeysFile /home/%%u/.ssh/authorized_keys\nStrictModes no\n' \
+      > /etc/ssh/sshd_config.d/01-container-machine.conf

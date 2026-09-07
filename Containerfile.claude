@@ -1,0 +1,10 @@
+# container build --tag ghcr.io/janwillies/claude:latest --file Containerfile.claude .
+FROM ghcr.io/janwillies/fedora-base:latest
+
+RUN dnf install -y nodejs && dnf clean all
+
+# Install claude code
+# Note: postinstall must run (no --ignore-scripts) — it downloads the
+# platform-native claude binary; without it the CLI refuses to start.
+RUN npm install -g @anthropic-ai/claude-code@latest && \
+    npm cache clean --force

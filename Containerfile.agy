@@ -1,0 +1,11 @@
+# container build --tag ghcr.io/janwillies/agy:latest --file Containerfile.agy .
+
+FROM ghcr.io/janwillies/fedora-base:latest
+
+ARG ANTIGRAVITY_CLI_VERSION=1.1.27
+
+# Install antigravity
+RUN curl -fsSLO "https://github.com/google-antigravity/antigravity-cli/releases/download/${ANTIGRAVITY_CLI_VERSION}/agy_cli_linux_arm64.tar.gz" && \
+    tar -xzf agy_cli_linux_arm64.tar.gz && \
+    mv antigravity /usr/local/bin/agy && \
+    rm agy_cli_linux_arm64.tar.gz

@@ -12,6 +12,7 @@ jobs:
       contents: write
     outputs:
       changed: ${{ steps.commit.outputs.changed }}
+      commit_sha: ${{ steps.commit.outputs.commit_sha }}
     steps:
       - uses: actions/checkout@v7
 
@@ -40,12 +41,15 @@ jobs:
             git commit -m "chore: update fedora digest to ${{ steps.digest.outputs.digest }}"
             git push
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           fi
 
   build:
     needs: update
     if: needs.update.outputs.changed == 'true'
     uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.update.outputs.commit_sha }}
     permissions:
       contents: read
       packages: write

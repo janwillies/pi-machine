@@ -7,7 +7,12 @@ on:
       - Containerfile
       - Containerfile.fedora-base
   workflow_dispatch:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref or commit SHA to check out'
+        type: string
+        default: ''
 
 jobs:
   build:
@@ -17,6 +22,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Log in to ghcr.io
         uses: docker/login-action@v4
