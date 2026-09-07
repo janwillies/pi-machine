@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - Containerfile
+      - Containerfile.agy
+      - Containerfile.claude
       - Containerfile.fedora-base
   workflow_dispatch:
   workflow_call:
@@ -48,4 +50,22 @@ jobs:
           file: Containerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/pi:latest
+          platforms: linux/arm64
+
+      - name: Build and push agy
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Containerfile.agy
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/agy:latest
+          platforms: linux/arm64
+
+      - name: Build and push claude
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Containerfile.claude
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/claude:latest
           platforms: linux/arm64
