@@ -13,7 +13,9 @@ RUN dnf install -y \
         --setopt=install_weak_deps=False \
         --setopt=tsflags=nodocs \
         systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
-        tar xz git-core curl wget ncurses-term which python3 && \
+        tar xz git-core curl wget ncurses-term which python3 dnf5-plugins && \
+    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo && \
+    dnf install -y gh && \
     dnf clean all && \
     rm -rf /usr/share/locale/* && \
     mkdir -p /usr/local/bin
