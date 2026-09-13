@@ -1,22 +1,50 @@
-FROM ghcr.io/janwillies/fedora-base:latest
+## Build this Containerfile:
+# container build --tag ghcr.io/janwillies/fedora-base:latest --file Containerfile .
 
-# Install pi dependencies
-RUN dnf install -y nodejs && dnf clean all
+FROM quay.io/fedora/fedora:44@sha256:e65d65b08c4b05c2f30fd921f451db12907e5f9b04717da125bb407cd07e7cba
 
-# Install ripgrep
-RUN curl -LO 'https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-gnu.tar.gz' && \
-    tar -xzf 'ripgrep-15.2.0-aarch64-unknown-linux-gnu.tar.gz' && \
-    mv 'ripgrep-15.2.0-aarch64-unknown-linux-gnu/rg' /usr/local/bin/rg && \
-    rm -f 'ripgrep-15.2.0-aarch64-unknown-linux-gnu.tar.gz' && \
-    rm -rf 'ripgrep-15.2.0-aarch64-unknown-linux-gnu'
+# only install en_US translations; must precede the dnf install to take effect
+RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
 
-# Install fd
-RUN curl -LO https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-aarch64-unknown-linux-gnu.tar.gz && \
-    tar -xzf 'fd-v10.4.2-aarch64-unknown-linux-gnu.tar.gz' && \
-    mv 'fd-v10.4.2-aarch64-unknown-linux-gnu/fd' /usr/local/bin/fd && \
-    rm -f 'fd-v10.4.2-aarch64-unknown-linux-gnu.tar.gz' && \
-    rm -rf 'fd-v10.4.2-aarch64-unknown-linux-gnu'
+# systemd provides /sbin/init, which is all a container machine needs; NetworkManager
+# does DHCP on the virtio NIC; sudo/passwd are used by Apple's first-boot provisioning;
+# chrony resyncs the clock, which otherwise drifts across host sleep and breaks TLS/git.
+RUN dnf install -y \
+        --setopt=install_weak_deps=False \
+        --setopt=tsflags=nodocs \
+        systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
+        tar xz git-core curl wget ncurses-term which python3 dnf5-plugins systemd-pam && \
+    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo && \
+    dnf install -y gh && \
+    dnf clean all && \
+    rm -rf /usr/share/locale/* && \
+    mkdir -p /usr/local/bin
 
-# Install pi-coding-agent
-RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent && \
-    npm cache clean --force
+# systemd treats an empty machine-id as first boot and provisions on start
+RUN : > /etc/machine-id
+
+RUN ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    echo "Europe/Berlin" > /etc/timezone
+
+# the journal is uncapped by default and grows over the machine's lifetime
+RUN mkdir -p /etc/systemd/journald.conf.d && \
+    printf '[Journal]\nSystemMaxUse=32M\n' > /etc/systemd/journald.conf.d/00-size.conf
+
+# https://github.com/apple/container/blob/main/docs/container-machine.md#bring-your-own-container-machine-image
+# systemctl set-default does not persist here; the base ships
+# /usr/lib/systemd/system/default.target -> graphical.target, so override it in /etc
+RUN ln -sf /usr/lib/systemd/system/multi-user.target /etc/systemd/system/default.target
+
+# Apple's sample also masks systemd-tmpfiles-setup, but Fedora provisions /var from
+# tmpfiles.d (e.g. /var/lib/chrony), so masking it breaks packages at boot.
+RUN systemctl mask \
+      dev-hugepages.mount \
+      sys-fs-fuse-connections.mount \
+      systemd-update-utmp.service \
+      console-getty.service
+
+# StrictModes no because virtiofs mounts present ownership that sshd would otherwise reject.
+# authorized_keys lives under /home/%u, which is provided at runtime via the
+# host's home/ mount (see run-*.sh / *-vm zsh functions), not baked into the image.
+RUN printf 'AuthorizedKeysFile /home/%%u/.ssh/authorized_keys\nStrictModes no\n' \
+      > /etc/ssh/sshd_config.d/01-container-machine.conf
