@@ -13,7 +13,7 @@ RUN dnf install -y \
         --setopt=install_weak_deps=False \
         --setopt=tsflags=nodocs \
         systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
-        tar xz git-core curl wget ncurses-term which python3 dnf5-plugins systemd-pam && \
+        tar xz git-core curl wget ncurses-term which python3 nodejs npm dnf5-plugins systemd-pam && \
     dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo && \
     dnf install -y gh && \
     dnf clean all && \
@@ -48,3 +48,7 @@ RUN systemctl mask \
 # host's home/ mount (see run-*.sh / *-vm zsh functions), not baked into the image.
 RUN printf 'AuthorizedKeysFile /home/%%u/.ssh/authorized_keys\nStrictModes no\n' \
       > /etc/ssh/sshd_config.d/01-container-machine.conf
+
+
+# npm config set prefix ~/.local
+# npm install -g @agentclientprotocol/claude-agent-acp
