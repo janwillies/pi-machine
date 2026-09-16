@@ -50,5 +50,35 @@ RUN printf 'AuthorizedKeysFile /home/%%u/.ssh/authorized_keys\nStrictModes no\n'
       > /etc/ssh/sshd_config.d/01-container-machine.conf
 
 
+# Apple's first-boot provisioning ends with a recursive chown of CONTAINER_HOME
+# (/sbin.machine/create-user.sh). /home is a virtiofs mount of the host tree,
+# whose files already arrive owned by the invoking uid:gid, so that chown only
+# re-stamps ownership the files already have -- at one host round trip per file,
+# ~3.5 minutes for ~30k files, all of it before the first shell appears.
+# /sbin.machine/init prefers /etc/machine/create-user.sh over its built-in copy,
+# so ship the same steps with the recursion dropped.
+RUN mkdir -p /etc/machine && \
+    printf '%s\n' \
+      '#!/bin/sh' \
+      'set -e' \
+      'if ! getent group "${CONTAINER_GID}" >/dev/null 2>&1; then' \
+      '    echo "${CONTAINER_USER}:x:${CONTAINER_GID}:" >> /etc/group' \
+      'fi' \
+      'if ! getent passwd "${CONTAINER_UID}" >/dev/null 2>&1; then' \
+      '    echo "${CONTAINER_USER}:x:${CONTAINER_UID}:${CONTAINER_GID}::${CONTAINER_HOME}:${CONTAINER_SHELL}" >> /etc/passwd' \
+      '    echo "${CONTAINER_USER}:!:19000:0:99999:7:::" >> /etc/shadow' \
+      'fi' \
+      'mkdir -p "${CONTAINER_HOME}"' \
+      'if [ -d /etc/skel ]; then' \
+      '    cp -a /etc/skel/. "${CONTAINER_HOME}"' \
+      'fi' \
+      'chown "${CONTAINER_UID}:${CONTAINER_GID}" "${CONTAINER_HOME}"' \
+      'mkdir -p /etc/sudoers.d' \
+      'sudoers_file=$(echo "${CONTAINER_USER}" | tr "." "_")' \
+      'echo "${CONTAINER_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${sudoers_file}"' \
+      'chmod 440 "/etc/sudoers.d/${sudoers_file}"' \
+      > /etc/machine/create-user.sh && \
+    chmod 755 /etc/machine/create-user.sh
+
 # npm config set prefix ~/.local
 # npm install -g @agentclientprotocol/claude-agent-acp
