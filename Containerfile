@@ -13,7 +13,7 @@ RUN dnf install -y \
         --setopt=install_weak_deps=False \
         --setopt=tsflags=nodocs \
         systemd dbus-broker NetworkManager openssh-server sudo passwd chrony \
-        tar xz git-core curl wget ncurses-term which python3 nodejs npm dnf5-plugins systemd-pam && \
+        tar xz git-core curl wget ncurses-term which python3 nodejs npm dnf5-plugins systemd-pam bash-completion && \
     dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo && \
     dnf install -y gh && \
     dnf clean all && \
@@ -81,4 +81,5 @@ RUN mkdir -p /etc/machine && \
     chmod 755 /etc/machine/create-user.sh
 
 # npm config set prefix ~/.local
+# npm update -g @agentclientprotocol/claude-agent-acp
 # npm install -g @agentclientprotocol/claude-agent-acp
