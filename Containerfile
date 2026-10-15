@@ -6,6 +6,8 @@ FROM quay.io/fedora/fedora:44@sha256:e1af42f90ba464667c4efa9de8d6b32ac106260f911
 # only install en_US translations; must precede the dnf install to take effect
 RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
 
+RUN echo "proxy=http://192.168.64.1:3128" >> /etc/dnf/dnf.conf
+
 # systemd provides /sbin/init, which is all a container machine needs; NetworkManager
 # does DHCP on the virtio NIC; sudo/passwd are used by Apple's first-boot provisioning;
 # chrony resyncs the clock, which otherwise drifts across host sleep and breaks TLS/git.
