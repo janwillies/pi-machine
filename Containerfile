@@ -6,7 +6,6 @@ FROM quay.io/fedora/fedora:44@sha256:4a78eff1423dcce55cf68b8fd66e7cdca61c8597828
 # only install en_US translations; must precede the dnf install to take effect
 RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
 
-RUN echo "proxy=http://192.168.64.1:3128" >> /etc/dnf/dnf.conf
 
 # systemd provides /sbin/init, which is all a container machine needs; NetworkManager
 # does DHCP on the virtio NIC; sudo/passwd are used by Apple's first-boot provisioning;
@@ -85,3 +84,5 @@ RUN mkdir -p /etc/machine && \
 # npm config set prefix ~/.local
 # npm update -g @agentclientprotocol/claude-agent-acp
 # npm install -g @agentclientprotocol/claude-agent-acp
+
+RUN echo "proxy=http://192.168.64.1:3128" >> /etc/dnf/dnf.conf
