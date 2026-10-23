@@ -1,7 +1,7 @@
 ## Build this Containerfile:
 # container build --tag ghcr.io/janwillies/fedora-base:latest --file Containerfile .
 
-FROM quay.io/fedora/fedora:44@sha256:b96f024cecbe9515eb049107d2856e7ad923f7aac09a3c90e7a0d52a46fa3454
+FROM quay.io/fedora/fedora:44@sha256:6ad1739ac6fb30f72ecc7b62a7ca94871d1cab215e4f5174113941047e0b4ed4
 
 # only install en_US translations; must precede the dnf install to take effect
 RUN echo "%_install_langs en_US:en" > /etc/rpm/macros.image-language-conf
